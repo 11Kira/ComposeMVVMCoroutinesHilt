@@ -1,18 +1,31 @@
 package com.kira.composemvvmcoroutineshilt
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
+import com.kira.composemvvmcoroutineshilt.model.User
 import com.kira.composemvvmcoroutineshilt.ui.theme.ComposeMVVMCoroutinesHiltTheme
+import com.kira.composemvvmcoroutineshilt.user.UserState
+import com.kira.composemvvmcoroutineshilt.user.UserViewModel
+import kotlinx.coroutines.flow.SharedFlow
 
 class MainActivity : ComponentActivity() {
+
+    private val viewModel: UserViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -22,7 +35,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    Greeting("Android")
+                    ScreenSetup(viewModel = viewModel)
                 }
             }
         }
@@ -30,17 +43,33 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
+fun ScreenSetup(viewModel: UserViewModel) {
+    MainScreen(viewModel.userState)
 }
-
-@Preview(showBackground = true)
 @Composable
-fun GreetingPreview() {
-    ComposeMVVMCoroutinesHiltTheme {
-        Greeting("Android")
+fun MainScreen(sharedFlow: SharedFlow<UserState>) {
+    val messages = remember { mutableStateListOf<User>() }
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    LaunchedEffect(key1 = Unit) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            sharedFlow.collect { state ->
+                when (state) {
+                    is UserState.SetResults -> {
+                        state.userList.forEach{
+                            messages.add(it)
+                        }
+                    }
+
+                    is UserState.ShowError -> {
+                        Log.e("Error: ", state.error.toString())
+                    }
+
+                    else -> {
+                        Log.e("Error: ", state.toString())
+                    }
+                }
+            }
+        }
     }
 }
