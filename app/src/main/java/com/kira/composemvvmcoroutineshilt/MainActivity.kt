@@ -86,6 +86,8 @@ fun MainScreen(sharedFlow: SharedFlow<UserState>) {
             }
         }
     }
+    
+    NameList(users = messages)
 }
 
 @Composable
